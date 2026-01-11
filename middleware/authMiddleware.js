@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
+const User = require("../model/User");
 
-module.exports = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -13,9 +14,16 @@ module.exports = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+    console.log("Authenticated User:", user);
+    req.user = user;
     next();
   } catch (error) {
     return res.status(401).json({ message: "Invalid or expired token" });
   }
 };
+
+module.exports = authMiddleware;

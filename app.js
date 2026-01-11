@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const authRoutes = require("./routes/authRoutes");
+const userRoutes=require("./routes/UserRoutes");
 const cors = require("cors");
 const app = express();
 const { connectDB } = require("./lib/db");
@@ -15,6 +16,7 @@ app.get("/", (req, res) => {
   res.send("Welcome to the Authentication API");
 });
 app.use("/api/auth", authRoutes);
+app.use("/api/users",userRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

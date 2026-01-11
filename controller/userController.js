@@ -67,15 +67,60 @@ exports.createUser = async (req, res) => {
 //get all users
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password");
-    return res
-      .status(200)
-      .json({
-        message: "All users fetched successfully",
-        count: users.length,
-        users,
-      });
-  } catch (error) {
+    const {
+      search,role,department,workLocation,gender,joiningDate,active,sortBy,sortOrder,page,limit} = req.query;
+
+      if(!page || !limit){
+        page=1;return res.status(400).json({message:"page and limit are required" });
+        }
+      let query={};
+      if(search){
+        query.$or=[
+            { name: { $regex: search, $options: "i" } },
+            { email: { $regex: search, $options: "i" } },
+            { phone: { $regex: search, $options: "i" } },
+            { designation: { $regex: search, $options: "i" } },
+            { department: { $regex: search, $options: "i" } }
+        ]
+      }
+      if(role){
+        query.role=role;
+      }
+      if(department){
+        query.department=department;
+      }
+      if(gender){
+        query.gender=gender;}
+      if(joiningDate){
+        const date=new Date(joiningDate);
+        const nextDate=new Date(date);
+        query.joiningDate={
+          $gte: date,
+          $lt: nextDate
+        };
+      }
+      if(workLocation){
+        query.workLocation=workLocation;
+      }
+      if(active){
+        query.active=active==="true";
+      }
+      let sortQuery={};
+      if(sortBy){
+        const order=sortOrder==="desc" ? -1 : 1;
+        sortQuery[sortBy]=order;
+      }else
+      {
+        sortQuery.createdAt=-1;
+      }
+
+      const skip=(page-1)*limit;
+
+      const users = await User.find(query).select("-password").sort(sortQuery).skip(skip).limit(parseInt(limit));
+      const totalUsers = await User.countDocuments(query);
+
+    return res.status(200).json({ message: "Users fetched successfully", count: users.length, totalUsers, page: Number(page), limit: Number(limit), totalPages: Math.ceil(totalUsers / Number(limit)), users });
+  }catch (error) {
     console.error("Get all users error:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
